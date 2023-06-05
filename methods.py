@@ -85,24 +85,8 @@ def recompute_mano_hand_state(joint_rotations, hand_state_left=None, hand_state_
 
 def mesh_mano(hand_state_left=None, hand_state_right=None, mesh_2_world=None, mano_shape_betas=None, mano_rotations_left=None,raw_3d_keypoints=None,
                     mano_rotations_right=None, handVertContact=None, handVertIntersec=None,handVertObj_vertices_in_world=None):
-    # Calculate MANO Left Geometries
-    #mano_finger_sceleton_left, \
-    mano_mesh_left = recompute_mano_hand_state(
-        mano_rotations_left,
-        hand_state_left, 
-        hand_state_right,
-        left=True,
-        mano_shape_betas=mano_shape_betas,
-        handVertContact=None,
-        handVertIntersec=None,
-        mesh2world=pt.concat(
-            mano_2_world_base(hand_state_left, hand_state_right, mano_shape_betas=mano_shape_betas, left=True),
-            mesh_2_world
-        )
-    )
 
     # Calculate MANO Right Geometries
-    #mano_finger_sceleton_right, \mano_2_world_transform
     mano_mesh_right = recompute_mano_hand_state(
         mano_rotations_right,
         hand_state_left, 
@@ -116,16 +100,7 @@ def mesh_mano(hand_state_left=None, hand_state_right=None, mesh_2_world=None, ma
             mesh_2_world
         )
     )
-
-    # draw some handVertObj_vertices_in_world
-    if handVertObj_vertices_in_world is not None:
-        m = np.array(mano_mesh_right.vertices)
-        v = handVertObj_vertices_in_world
-        arrows_geo = []
-        for idx, a in enumerate(m[:15]):# 15 points as spheres is enoughmano_2_world_transform
-            arrows_geo.append(make_joint_sphere(v[idx]))
-        # scene_object_list['handVertObj_vertices_in_world'] = arrows_geo
-
+    
     return mano_mesh_right
 
 
@@ -450,7 +425,6 @@ def load_annotations_and_image_eval(seq_dir, frame_number):
     meta_filename = os.path.join(seq_dir, 'meta', str(frame_number).zfill(4) + '.pkl')
     metafilename = open(meta_filename, 'rb')
     ho3d_annotation = pickle.load(metafilename, encoding='latin1')
-    #ho3d_annotation = pickle.load(metafilename)
 
     res = {'world_xyz': np.zeros(shape=(1, 3)),
            'mano_joint_angles': np.zeros(shape=(16, 3)),
