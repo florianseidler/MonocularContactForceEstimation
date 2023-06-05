@@ -80,10 +80,7 @@ def recompute_mano_hand_state(joint_rotations, hand_state_left=None, hand_state_
         handVertIntersec=handVertIntersec
     )
 
-    #joints_xyz = hand_state.get_current_joints()
-    #finger_sceleton = open3dVisUtils.make_finger_sceleton_with_coords(joints_xyz, joint_rotations[:16])
-
-    return mesh  #, finger_sceleton 
+    return mesh
 
 
 def mesh_mano(hand_state_left=None, hand_state_right=None, mesh_2_world=None, mano_shape_betas=None, mano_rotations_left=None,raw_3d_keypoints=None,
