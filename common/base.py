@@ -28,7 +28,7 @@ from common.logger import colorlogger
 from torch.nn.parallel.data_parallel import DataParallel
 from common.model import get_model
 
-import torch  # added
+import torch 
 
 
 class Base(object):
