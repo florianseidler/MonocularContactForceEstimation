@@ -30,4 +30,5 @@ def generate_mano_mesh_from_kypt(img_path, seq_dir, frame):
     mano_mesh = O3dVisUtils.make_mano_mesh(hand_state.vertices, hand_state.faces,
                                            handVertContact=None, handVertIntersec=None)
 
-    return mano_mesh  # , hand_state
+    return mano_mesh
+ 
