@@ -9,15 +9,14 @@ import os
 
 base_path = os.getcwd()
 
-trained_data = False  # True  # False  # 
-set = 'SB13'  # 'MEM4'  # 'SB13'  # 'SMu40'  # 'SB12'
-frame = '0618'  # '0786'  # '0379'  # '1872'  # '0379'
+trained_data = False 
+set = 'SB13'
+frame = '0618'
 
 if trained_data:
     seq_dir = base_path + '/sources/HO3D_v3/train/' + set + '/'
 else:  # if data is unseen
-    seq_dir = base_path + '/sources/HO3D_v3/evaluation/' + set + '/'
-    #seq_dir = base_path + '/sources/H2O3D/evaluation/' + set + '/'
+    seq_dir = base_path + '/sources/HO3D_v3/evaluation/' + set + '/
 
 
 def main():   
@@ -30,23 +29,7 @@ def main():
 
     # create meshes
     mano_mesh_kypt = generate_mano_mesh_from_kypt(seq_dir + 'rgb/' + frame, seq_dir, frame)  # blue    
-    #mano_mesh_kypt.translate([0.0, 0.0, -0.62])
-    #mano_mesh_kypt.translate([0.012, 0.012, -0.595])
-    #mano_mesh_kypt.translate([0.012, -0.012, -0.595])
-    
-    #mano_mesh_kypt.translate([0.024, -0.006, -0.605])  # 595])
-
-    #mano_mesh_kypt.translate(res['world_xyz'])
-    #print(res['world_xyz'])  # [ 0.11996929  0.01222239 -0.5948328 ]
-    #mano_mesh_kypt.translate([0.896828, -0.1295099, 0.4229958])
-    transl = np.array([0.896828, -0.1295099, 0.4229958])
-    #transl = np.array([-0.08257934, 0.01192518,  -0.03894915])
-    
-    #mano_mesh_kypt.translate([transl[0], -transl[1], transl[2]])
-    #mano_mesh_kypt.translate([-0.08257934, 0.01192518,  -0.03894915])
-    #mano_mesh_kypt.translate([-0.015, -0.025, 0.015])
-
-    #mano_mesh_kypt.translate([-0.1, -0.015, -0.025]) #  to fix (only) SB13/0618
+    mano_mesh_kypt.translate(res['world_xyz'])
 
     object_mesh = create_object_mesh(res, hand_state_left, hand_state_right, mano_2_world_transform)
     #real_mano_mesh = create_hand_mesh(res, hand_state_left, hand_state_right, mano_2_world_transform)
