@@ -26,8 +26,8 @@ def fix_seeds(random_seed):
 
 class Config:
     # ~~~~~~~~~~~~~~~~~~~~~~Dataset~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-    dataset = 'ho3d'  # 'InterHand2.6M'  # InterHand2.6M, ho3d, h2o3d, ho3d_h2o3d
-    pose_representation = '3D'  # 'angles' #3D, 2p5D, angles
+    dataset = 'ho3d'  
+    pose_representation = '3D'  
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 
@@ -36,19 +36,8 @@ class Config:
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#SS
 
 
-    # ~~~~~~~~~~~~~~~~~~~~~~InterHand2.6M paths~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-    #interhand_anno_dir = '/home/urshak/Documents/thesis/kypt_transformer-master/data/interhand'
-    #  '/media/shreyas/4aa82be1-14a8-47f7-93a7-171e3ebac2b0/networks/InterHand2.6M/data/InterHand2.6M/annotations'
-    #interhand_images_path = '/home/urshak/Documents/thesis/kypt_transformer-master/data/interhand'
-    #  '/media/shreyas/4aa82be1-14a8-47f7-93a7-171e3ebac2b0/networks/InterHand2.6M/data/InterHand2.6M/images'
-
-    # RootNet output path
-    root_net_output_path = '/media/shreyas/4aa82be1-14a8-47f7-93a7-171e3ebac2b0/networks/InterHand2.6M/data/InterHand2.6M/RootNet.output.on.InterHand2.6M'
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
     # ~~~~~~~~~~~~~~~~~~~~~~HO-3D paths~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-    ho3d_anno_dir = base_path + '/sources/HO3D_v3' # '/home/urshak/Documents/thesis/HO3D_v3'
-    # '/media/shreyas/ssd2/Dataset/HO3D_Release_Final'
+    ho3d_anno_dir = base_path + '/sources/HO3D_v3' 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 
@@ -71,7 +60,6 @@ class Config:
 
     # Path to J_regressor_mano_ih26m.py in InterHand2.6M dataset
     joint_regr_np_path = 'sources/J_regressor_mano_ih26m.npy'
-    #joint_regr_np_path = '/home/xardas/Documents/kypt_transformer-master_/main/tool/MANO_joint_regressor/J_regressor_mano_ih26m.npy'
     assert os.path.exists(joint_regr_np_path), 'Unable to find J_regressor_mano_ih26m.npy'
 
     skeleton_file = 'sources/skeleton.txt'
