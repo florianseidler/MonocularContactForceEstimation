@@ -28,7 +28,7 @@ OFFICIAL_MANO_RIGHT_PATH = '/sources/mano/models/mano/MANO_RIGHT.pkl'
 IK_UNIT_LENGTH = 0.09473151311686484 # in meter
 
 
-def predict_pose(seq_dir, frame):
+def predict_pose(kypt_3d_joints):
     """ Detects mano_params from images _via_kypt_trafo.
 
     # Arguments
@@ -37,13 +37,13 @@ def predict_pose(seq_dir, frame):
     global_pos_joints: np.ndarray, shape [21, 3]  Joint locations XYZ.
     theta_mpii: np.ndarray, shape [21, 4]  Joint rotations Quat aus global_pos_joints.
     """
-    global_pos_joints, theta_mpii, translation = process_via_kypt_trafo(seq_dir, frame) 
+    global_pos_joints, theta_mpii, m0_translation = process_via_kypt_trafo(kypt_3d_joints) 
     absolute_angle_quaternions = mpii_to_mano(theta_mpii)  # quaternions
     joint_angles = calculate_handstate_joint_angles_from_min_hand_absolute_angles(absolute_angle_quaternions)
 
     global_pos_joints = mpii_to_mano(global_pos_joints)  # quaternions 
 
-    return joint_angles, absolute_angle_quaternions, global_pos_joints, translation
+    return joint_angles, absolute_angle_quaternions, global_pos_joints, m0_translation
 
 
 
@@ -100,7 +100,7 @@ class ModelIK:
         return theta
     
 
-def process_via_kypt_trafo(seq_dir, frame):
+def process_via_kypt_trafo(kypt_3d_joints):
     """
     Process a single frame.
 
@@ -113,9 +113,8 @@ def process_via_kypt_trafo(seq_dir, frame):
     translation [3, 1]
     """
 
-    joints_right, translation = get_right_mano_xyz(seq_dir, frame)
-    joints_right = flip_joint_axis(joints_right, x=-1, y=-1, z=-1)
-    xyz = kypt_to_min_hand(joints_right)  # kypt->mano->mpii, rel to M0, normed by |M0 - Wrist|
+    joints_right = flip_joint_axis(kypt_3d_joints, x=-1, y=-1, z=-1)
+    xyz, m0_translation = kypt_to_min_hand(joints_right)  # kypt->mano->mpii, rel to M0, normed by |M0 - Wrist|
 
     delta, length = xyz_to_delta(xyz, MPIIHandJoints)
     delta *= length
@@ -144,7 +143,7 @@ def process_via_kypt_trafo(seq_dir, frame):
 
     theta = ik_model.process(pack)
 
-    return xyz, theta, translation
+    return xyz, theta, m0_translation
 
 
 def flip_joint_axis(joints, x=1, y=1, z=1):
@@ -155,38 +154,6 @@ def flip_joint_axis(joints, x=1, y=1, z=1):
     flipped_joints[i][1] = joints[i][1] * y
     flipped_joints[i][2] = joints[i][2] * z
   return flipped_joints
-
-
-def get_right_mano_xyz(seq_dir, frame):
-
-    cfg.use_big_decoder = '--use_big_decoder'  # args.use_big_decoder
-    cfg.dec_layers = 6  # args.dec_layers
-    cfg.calc_mutliscale_dim(cfg.use_big_decoder, cfg.resnet_type)
-    # set gpu_ids
-    cfg.set_args('0', '')
-
-    tester = Tester('sources/snapshot_21_845.pth.tar')
-    tester._make_batch_generator('test', 'all', None, None, None)
-    #tester._make_single_frame_generator('test', 'all', None, None, None, seq_dir, frame)
-    tester._make_model()
-
-    with torch.no_grad():
-       for itr, (inputs, targets, meta_info) in enumerate(tester.batch_generator):
-            # forward
-            model_out = tester.model(inputs, targets, meta_info, 'test', epoch_cnt=1e8)
-            out = {k[:-4]: model_out[k] for k in model_out.keys() if '_out' in k}
-
-    root_joint = torch.zeros((out['joint_3d_right'].shape[1], 1, 3)).to(out['joint_3d_right'].device)
-
-    joints_right = out['joint_3d_right'][-1]
-    joints_right = torch.cat([joints_right, root_joint], dim=1)  # .cpu().numpy()
-    joints_right = joints_right.cpu().numpy()
-    joints_right = joints_right[0]
-
-    translation = out['rel_trans'].cpu().numpy()
-    translation = translation[0]
-
-    return joints_right, translation
 
 
 def kypt_trafo():

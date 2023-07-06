@@ -320,7 +320,7 @@ def kypt_to_min_hand(kypt_xyz):
   mpii_xyz = mano_to_mpii(skeleton_to_mano_real(kypt_xyz))
   #mpii_xyz = skeleton_to_mano(kypt_xyz)  # worse meshes
 
-  print(mpii_xyz[9])
+  #print(mpii_xyz[9])
 
   # relative to wrist -> relative to M0
   rel_xyz = mpii_xyz - mpii_xyz[9]
@@ -333,4 +333,4 @@ def kypt_to_min_hand(kypt_xyz):
   min_dist = 0
   norm_rel_xyz = (rel_xyz - min_dist) / (norm_dist - min_dist)  # norm_rel_xyz = rel_xyz / norm_dist
 
-  return norm_rel_xyz
+  return norm_rel_xyz, mpii_xyz[9]

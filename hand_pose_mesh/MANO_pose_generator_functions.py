@@ -12,14 +12,14 @@ import cv2
 from paz.applications import MinimalHandPoseEstimation
 from .mano import HandState
 
-from .get_pose_ import predict_pose
+from hand_pose_mesh.mano_pose import predict_pose
 
 
 def apply_kypt_estimator(input_image, seq_dir, frame):
 
     world_xyz = [0, 0, 0]
     (mano_joint_angles, minimal_hand_absolute_joint_rotations,
-        mano_joints_xyz, mano_translation) = predict_pose(seq_dir, frame)
+        mano_joints_xyz, mano_translation, m0_translation) = predict_pose(seq_dir, frame)
     #world_xyz = mano_translation
     # ab hier keine änderung
     mpii_3d_joints = None
@@ -29,7 +29,22 @@ def apply_kypt_estimator(input_image, seq_dir, frame):
         'minimal_hand_absolute_joint_rotations',
         'input_image', 'annotated_image'])
     return wrap(world_xyz, mano_joints_xyz, mpii_3d_joints, mano_joint_angles,
-                minimal_hand_absolute_joint_rotations, input_image, annotated_image), mano_translation
+                minimal_hand_absolute_joint_rotations, input_image, annotated_image), mano_translation, m0_translation
+
+
+def get_hand_state(kypt_3d_joints):
+
+    world_xyz = [0, 0, 0]
+    (mano_joint_angles, minimal_hand_absolute_joint_rotations,
+        mano_joints_xyz, m0_translation) = predict_pose(kypt_3d_joints)
+    #world_xyz = mano_translation
+    # ab hier keine änderung
+    mpii_3d_joints = None
+    wrap = pr.WrapOutput(
+        ['world_xyz', 'mano_joints_xyz', 'mpii_3d_joints', 'mano_joint_angles',
+        'minimal_hand_absolute_joint_rotations'])
+    return wrap(world_xyz, mano_joints_xyz, mpii_3d_joints, mano_joint_angles,
+                minimal_hand_absolute_joint_rotations), m0_translation
 
 
 def get_transformation(transformation_values):
