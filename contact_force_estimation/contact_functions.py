@@ -4,6 +4,8 @@ from distance3d import hydroelastic_contact, utils, io
 from grasp_metrics.grasp_configuration import Contact
 from grasp_metrics.quasi_static_point_based import (ferrari_canny, force_closure, wrench_resistance, 
                                                     grasp_isotropy, min_singular, wrench_volume)
+from scipy.spatial import ConvexHull
+import trimesh
 
 
 def create_rigid_body(tetrahedral_mesh, potentials):
@@ -32,6 +34,42 @@ def create_surface_contact(details, friction_coef=1.0):
     ]
 
 
+def volume_of_grasp_polygon(contact_points, surf_object_mesh_dir):
+    """Area of the grasp polygon defined by 3 or more fingers.
+
+    Parameters
+    ----------
+    contact_points : array-like, shape (n_contacts, 3)
+        Contact points.
+
+    surf_object_mesh_dir : directory
+        Directory of the object surface mesh STL-file.
+
+    Returns
+    -------
+    covered_vol : float
+        Metric based on volume of the grasp polygon. covered_vol 
+        shows how much of the object's volume is covered by the grasp. 
+        Larger values are better.
+        covered_vol = 0: no grasp volume -> less than 2 contact points
+        covered_vol < 1: volume is partly covered
+        covered_vol = 1: whole volume is covered
+    """
+
+    # volume of the grasp polygon via convex hull
+    grasp_hull = ConvexHull(contact_points)
+    grasp_volume = grasp_hull.volume
+
+    # volume of the object polygon via surface mesh
+    object_surf_mesh = trimesh.load(surf_object_mesh_dir)
+    object_volume = object_surf_mesh.volume
+
+    # share of the grasp volume
+    covered_vol = grasp_volume / object_volume
+
+    return covered_vol
+
+
 def print_metrics_result(contacts):
     
     print(f"{force_closure(contacts)=}")
@@ -41,4 +79,7 @@ def print_metrics_result(contacts):
     print(f"{wrench_volume(contacts)=}")
     print(f"{wrench_resistance(contacts, target_wrench=np.array([-1.0, 0.0, 0.0, 0.0, 0.0, 0.0]))=}")
     print(f"{wrench_resistance(contacts, target_wrench=np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0]))=}")
-
+    
+    
+def print_geo_metrics_results(contact_points, surf_object_mesh_dir):
+    print("volume of grasp polygon:", volume_of_grasp_polygon(contact_points, surf_object_mesh_dir))
