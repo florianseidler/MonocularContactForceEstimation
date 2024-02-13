@@ -1,2 +1,5 @@
 # MonocularContactForceEstimation
 Detect contact points and estimate forces of hand and object meshes by estimating 3d points from monocular/single-view RGB images.
+
+# Setup
+Add distance3d, grasp_metrics and fTetWild to root directory and the HO3D dataset, mano model, ycb model meshes, iknet and kypt_transformer weights to sources as can be seen in https://github.com/shreyashampali/kypt_transformer
