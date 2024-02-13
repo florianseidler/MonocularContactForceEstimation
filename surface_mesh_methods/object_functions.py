@@ -6,54 +6,6 @@ import open3d
 import os
 
 
-def kypt_demo_obj_mesh_todel(obj_mesh, obj_rot, obj_trans):
-    #obj_id = int(meta_info['obj_id'][0].cpu().numpy())
-    #ycb_objs = H2O3DObjects()
-    #from copy import deepcopy
-    #obj_mesh = deepcopy(ycb_objs.obj_id_to_mesh[obj_id])
-
-    obj_rot = torch.from_numpy(obj_rot)
-    obj_trans = torch.from_numpy(obj_trans)
-    # Get the object mesh
-    rot_z_mat = np.eye(4)
-    rot_z_mat[:3,:3] = cv2.Rodrigues(np.array([0,1,0])*np.pi)[0]
-
-    use_obj_rot_parameterization = 1
-    if use_obj_rot_parameterization:  # cfg.use_obj_rot_parameterization:
-        #rot_mat = rot_param_rot_mat(obj_rot[0:0 + 1].reshape(-1, 6))[0].cpu().numpy()  # 3 x 3
-        rot_mat = rot_param_rot_mat(obj_rot.reshape(-1, 6))[0].cpu().numpy()  # 3 x 3
-    else:
-        #rot_mat = cv2.Rodrigues(obj_rot[0])[0]  # 
-        # for a 3-element vector that encodes the axis of rotation and the angle of rotation
-        rot_mat = cv2.Rodrigues(obj_rot[0].cpu().numpy())[0]
-
-    trans_mat = np.eye(4)
-    trans_mat[:3,:3] = rot_mat#.dot(aa)
-    trans_mat[:3,3] = obj_trans[0].cpu().numpy()
-    print(trans_mat[2,3] )
-    #trans_mat[2,3] = -trans_mat[2,3]
-    print(trans_mat[2,3] )
-
-    #rad = np.pi/2
-    #rad = 3 * np.pi/4
-    rad = np.pi
-    #obj_mesh = rotated_mesh_y(obj_mesh, rad)  # obj_mesh_y
-    #obj_mesh = rotated_mesh_z(obj_mesh, rad)  # obj_mesh_z
-    #obj_mesh.transform(rot_mat)
-
-    obj_mesh = rotated_mesh_x(obj_mesh, rad)  # obj_mesh_x
-    #obj_mesh = rotated_mesh_z(obj_mesh, rad=np.pi/2)  # obj_mesh_x
-    obj_mesh.transform(rot_z_mat)
-    obj_mesh.transform(trans_mat)
-    rad = -np.pi/2
-    #obj_mesh_x, obj_mesh_y, obj_mesh_z = rotated_meshes(obj_mesh, rad)
-    #obj_mesh_x.transform(trans_mat)
-    #obj_mesh_y.transform(trans_mat)
-    #obj_mesh_z.transform(trans_mat)
-
-    return obj_mesh
-
-
 def kypt_demo_obj_mesh(obj_mesh, obj_rot, obj_trans):
 
     obj_rot = torch.from_numpy(obj_rot)
@@ -273,7 +225,7 @@ def untransformed_obj_mesh(objName):
     object_mesh_open3d = make_mesh(
         objMesh.v,
         objMesh.f)
-    # add rotation if needed
+    # add rotation if needed --> needed for: SM1; not needed for: SB11; APx & MPMx won't work with either
     rot = 0
     if rot:
         rot_mat = np.eye(4)
