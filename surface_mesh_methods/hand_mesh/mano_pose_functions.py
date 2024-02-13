@@ -162,7 +162,7 @@ def flip_joint_axis(joints, x=1, y=1, z=1):
     flipped_joints[i][2] = joints[i][2] * z
   return flipped_joints
 
-
+"""
 def kypt_trafo():
 
     cfg.use_big_decoder = '--use_big_decoder'
@@ -194,7 +194,7 @@ def kypt_trafo():
             translation_vec[itr] = translation[0]
 
     return joints_right_vec, translation_vec
-
+"""
 
 def calculate_handstate_joint_angles_from_min_hand_absolute_angles(quats):
 
