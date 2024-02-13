@@ -28,7 +28,7 @@ jointsMapManoToDefault = [
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, transform, mode, annot_subset, capture=None, camera=None, seq_name_test=None, annotation_available=0):
+    def __init__(self, transform, mode, annot_subset, capture=None, camera=None, seq_name_test=None, annotation_available=0, camera_data=False, object_name=''):
         self.mode = mode  # train, test, val
         if mode == 'test':
             self.mode = 'evaluation' # train, test, val
@@ -48,8 +48,12 @@ class Dataset(torch.utils.data.Dataset):
         self.sequence_names = []
 
         # load annotation
-        with open(osp.join(self.dataset_path, self.mode+'.txt'), 'r') as f:
-            self.filelist = f.readlines()
+        if annotation_available:
+            with open(osp.join(self.dataset_path, 'annotated.txt'), 'r') as f:
+                self.filelist = f.readlines()
+        else:
+            with open(osp.join(self.dataset_path, self.mode+'.txt'), 'r') as f:
+                self.filelist = f.readlines()
         self.filelist = [f.strip() for f in self.filelist]
         
         self.mano_layer = {'right': smplx.create(cfg.smplx_path, 'mano', use_pca=False, is_rhand=True, flat_hand_mean=True),
@@ -63,17 +67,28 @@ class Dataset(torch.utils.data.Dataset):
         for fname in tqdm(self.filelist[::1]):
             seq_name = fname.split('/')[0]
             frame_idx = fname.split('/')[1]
-            img_path = osp.join(self.dataset_path, self.mode, seq_name, 'rgb', frame_idx+'.png')
+            if annotation_available:
+                #img_path = osp.join(self.dataset_path, 'train', seq_name, 'rgb', frame_idx+'.png')  # png
+                img_path = osp.join(self.dataset_path, 'train', seq_name, 'rgb', frame_idx+'.jpg')  # jpg
+                anno_path = osp.join(self.dataset_path, 'train', seq_name, 'meta', frame_idx+'.pkl')
+            else:    
+                #img_path = osp.join(self.dataset_path, self.mode, seq_name, 'rgb', frame_idx+'.png')  # png
+                img_path = osp.join(self.dataset_path, self.mode, seq_name, 'rgb', frame_idx+'.jpg')  # jpg
+                anno_path = osp.join(self.dataset_path, self.mode, seq_name, 'meta', frame_idx+'.pkl')
             print("img_path: ", img_path)
-            print("anno_path: ", osp.join(self.dataset_path, self.mode, seq_name, 'meta', frame_idx+'.pkl'))
-            print("does it exist? ", osp.exists(osp.join(self.dataset_path, self.mode, seq_name, 'meta', frame_idx+'.pkl')))
-            anno_path = osp.join(self.dataset_path, self.mode, seq_name, 'meta', frame_idx+'.pkl')
+            print("anno_path: ", anno_path)
+            print("does it exist? ", osp.exists(anno_path))
+            #anno_path = osp.join(self.dataset_path, self.mode, seq_name, 'meta', frame_idx+'.pkl')
 
             if seq_name_test is not None:
                 if seq_name_test != seq_name:
                     continue
+            
+            if camera_data:
+                anno = load_values_instead_of_annotation(object_name)
+            else:
+                anno = load_pickle_data(anno_path)
 
-            anno = load_pickle_data(anno_path)
 
             objName = anno['objName']
             objLabel = anno['objLabel']
@@ -283,7 +298,12 @@ class Dataset(torch.utils.data.Dataset):
 
         # image load
         img = load_img(img_path)
-        obj_seg = load_img(osp.join(self.dataset_path, self.mode, data['seq_name'], 'rgb', data['frame']+'.jpg'))
+        
+        try:
+            obj_seg = load_img(osp.join(self.dataset_path, self.mode, data['seq_name'], 'rgb', data['frame']+'.jpg'))
+            #raise IOError("Fail to read file in %s. Try to read file in HO3D_v3/train instead." % self.mode)
+        except OSError:
+            obj_seg = load_img(osp.join(self.dataset_path, 'train', data['seq_name'], 'rgb', data['frame']+'.jpg'))
         obj_seg = cv2.resize(obj_seg.astype(np.uint8), (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
 
         # augmentation
@@ -384,30 +404,6 @@ class Dataset(torch.utils.data.Dataset):
             obj_pose_valid *= 0.
         else:
             obj_pose_valid *= 1.
-
-        if False:
-            rotmat = np.array([[1,0,0,0],[0,-1,0,0],[0,0,-1,0],[0,0,0,1]])*1.0
-            # visualize mesh in open3d
-            # print(mano_valid)
-            print(seq_name, data['frame'])
-            mesh_list = []
-            if hand_type[0] == 1:
-                mesh_right_o3d = o3d.geometry.TriangleMesh()
-                mesh_right_o3d.vertices = o3d.utility.Vector3dVector(verts_right)
-                mesh_right_o3d.triangles = o3d.utility.Vector3iVector(faces)
-                mesh_right_o3d.vertex_colors = o3d.utility.Vector3dVector(
-                    np.load('/home/shreyas/docs/vertex_colors.npy')[:,::-1])
-                mesh_list.append(mesh_right_o3d.transform(rotmat))
-
-            if hand_type[1] == 1:
-                mesh_left_o3d = o3d.geometry.TriangleMesh()
-                mesh_left_o3d.vertices = o3d.utility.Vector3dVector(verts_left)
-                mesh_left_o3d.triangles = o3d.utility.Vector3iVector(faces)
-                mesh_left_o3d.vertex_colors = o3d.utility.Vector3dVector(
-                    np.load('/home/shreyas/docs/vertex_colors.npy')[:,::-1])
-                mesh_list.append(mesh_left_o3d.transform(rotmat))
-
-            o3d.visualization.draw_geometries(mesh_list, mesh_show_back_face=True)
 
         if 'AP1' in seq_name:
             # this is an unseen object, so pose cant be estimated
@@ -548,3 +544,67 @@ class Dataset(torch.utils.data.Dataset):
         self.dump_for_challenge(osp.join(ckpt_dir, 'results_%s.json'%(ckpt_name)), pred_joints_list, pred_verts_list)
 
 
+def load_values_instead_of_annotation(object_name):
+    # objCorners3D: A 8x3 matrix representing the 3D bounding box corners of the object
+    # objName: Name of the object as given in YCB dataset
+	# objLabel: Object label as given in YCB dataset
+    # camMat: Intrinsic camera parameters
+    
+    camMat = np.array([[617.287, 0, 314.564], [0, 617.061, 236.353], [0, 0, 1]], dtype=np.float32)
+
+    if object_name == 'mustard':
+        objName = '006_mustard_bottle'
+        objLabel = 5
+        objCorners3D = np.array([[ 0.05767485, -0.11673576, -0.424152  ],
+                                [ 0.03861579,  0.04131518, -0.3178803 ],
+                                [-0.0031499 , -0.10700934, -0.44952595],
+                                [-0.02220896,  0.05104161, -0.34325426],
+                                [ 0.09610446, -0.06380344, -0.49598271],
+                                [ 0.0770454 ,  0.0942475 , -0.38971102],
+                                [ 0.03527971, -0.05407702, -0.52135667],
+                                [ 0.01622065,  0.10397393, -0.41508498]], dtype=np.float32)
+        
+    if object_name == 'bleach_cleanser':
+        objName = '021_bleach_cleanser'
+        objLabel = 12
+        objCorners3D = np.array([[-0.07234921, -0.10970992, -0.66299638],
+                                [-0.0873614 ,  0.11551789, -0.55405845],
+                                [-0.13538794, -0.1024786 , -0.68663411],
+                                [-0.15040013,  0.12274922, -0.57769617],
+                                [-0.03547124, -0.06613098, -0.74801332],
+                                [-0.05048343,  0.15909684, -0.63907538],
+                                [-0.09850996, -0.05889965, -0.77165104],
+                                [-0.11352215,  0.16632816, -0.66271311]], dtype=np.float32)
+    
+    if object_name == 'spam_can':
+        objName = '010_potted_meat_can'
+        objLabel = 9
+        objCorners3D = np.array([[-0.00806147, -0.15786403, -0.53496667],
+                                [-0.01110688, -0.08161371, -0.50073565],
+                                [ 0.03295766, -0.13839692, -0.57468072],
+                                [ 0.02991224, -0.06214661, -0.5404497 ],
+                                [ 0.06672369, -0.18383793, -0.47045588],
+                                [ 0.06367828, -0.10758762, -0.43622486],
+                                [ 0.10774281, -0.16437083, -0.51016993],
+                                [ 0.1046974 , -0.08812051, -0.47593891]], dtype=np.float32)
+
+    handJoints3D = np.array([0, 0, 0])
+    objRot = np.zeros((3,))
+    objTrans = np.zeros((3,))
+    handBoundingBox = np.zeros((4,))
+    objCorners3DRest = np.zeros((8, 3))
+    
+    
+    anno =  {
+            'objRot': objRot, 
+            'objTrans': objTrans,
+            'handBoundingBox': handBoundingBox, 
+            'handJoints3D': handJoints3D,    
+            'objCorners3DRest': objCorners3DRest, 
+            'objCorners3D': objCorners3D,    
+            'camMat': camMat, 
+            'objName': objName,
+            'objLabel': objLabel, 
+    }
+ 
+    return anno

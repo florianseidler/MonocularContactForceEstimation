@@ -186,10 +186,22 @@ class Tester(Base):
         self.ckpt_path = ckpt_path
         super(Tester, self).__init__(log_name = 'test_logs.txt')
 
-    def _make_batch_generator(self, test_set, annot_subset, capture, camera, seq_name, annotation_available=0):
+    def _make_batch_generator(self, test_set, annot_subset, capture, camera, seq_name, annotation_available=0, camera_data=False, object_name=''):
         # data load and construct batch generator
         self.logger.info("Creating " + test_set + " dataset...")
-        testset_loader = Dataset(transforms.ToTensor(), test_set, annot_subset, capture, camera, seq_name, annotation_available)
+        testset_loader = Dataset(transforms.ToTensor(), test_set, annot_subset, capture, camera, seq_name, annotation_available, camera_data, object_name)
+        batch_generator = DataLoader(dataset=testset_loader, batch_size=cfg.num_gpus*cfg.test_batch_size,
+                                     shuffle=False, num_workers=cfg.num_thread, pin_memory=True)
+        
+        self.joint_num = testset_loader.joint_num
+        self.batch_generator = batch_generator
+        self.testset = testset_loader
+
+
+    def _make_batch_generator_no_annotation(self, test_set, annot_subset, capture, camera, seq_name, annotation_available=0, camera_data=0, object_name=''):
+        # data load and construct batch generator
+        self.logger.info("Creating " + test_set + " dataset...")
+        testset_loader = Dataset_no_anno(transforms.ToTensor(), test_set, annot_subset, capture, camera, seq_name, annotation_available, camera_data=0, object_name='')
         batch_generator = DataLoader(dataset=testset_loader, batch_size=cfg.num_gpus*cfg.test_batch_size,
                                      shuffle=False, num_workers=cfg.num_thread, pin_memory=True)
         
@@ -199,7 +211,7 @@ class Tester(Base):
 
 
     def _make_single_frame_generator(self, test_set, annot_subset, capture, camera, seq_name, seq_dir, frame):
-        # data load and construct batch generator fror single frame
+        # data load and construct batch generator for single frame
         self.logger.info("Creating " + test_set + " dataset...")
         testset_loader = Dataset(transforms.ToTensor(), test_set, annot_subset, capture=capture, camera=camera, seq_name_test=seq_name, seq_dir=seq_dir, frame=frame)
         batch_generator = DataLoader(dataset=testset_loader, batch_size=cfg.num_gpus*cfg.test_batch_size,
@@ -217,12 +229,11 @@ class Tester(Base):
         
         # prepare network
         self.logger.info("Creating graph...")
-        model = get_model('test', self.joint_num)  # Hier gibts wohl auch Probleme: AttributeError: 'Config' object has no attribute 'mutliscale_dim'. Did you mean: 'calc_mutliscale_dim'
-        #  import torch
-        print(torch.cuda.is_available())
+        model = get_model('test', self.joint_num)  # AttributeError: 'Config' object has no attribute 'mutliscale_dim'. Did you mean: 'calc_mutliscale_dim'
+        #print(torch.cuda.is_available())
         model = model.cuda()
         model = DataParallel(model)
-        ckpt = torch.load(model_path)  # 2GB GPU zu klein
+        ckpt = torch.load(model_path)  # >4GB VRAM needed
 
         resnet_dec_keys = []
         resnet_new_keys = []
@@ -240,6 +251,7 @@ class Tester(Base):
 
         self.model = model
 
+
     def _evaluate(self, preds,gt, ckpt_path, annot_subset):
         if cfg.dataset == 'InterHand2.6M':
             if cfg.predict_2p5d and cfg.predict_type == 'vectors':
@@ -251,6 +263,7 @@ class Tester(Base):
             self.testset.evaluate(preds, ckpt_path, gt)
         elif cfg.dataset == 'h2o3d':
             self.testset.evaluate(preds, ckpt_path, gt)
+
 
     def _dump_results(self, preds, dump_dir):
         self.testset.dump_results(preds, dump_dir)
