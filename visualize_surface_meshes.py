@@ -1,63 +1,38 @@
 import open3d as o3d
 import numpy as np
 import os
+import re
+from icecream import ic
 
-set = "SM1"  # "AP11"  # "SM1"  # "MPM13"  # "MPM14"  # "SB11"  # "GSF10"  # "SMu40"
+set = "SM1"  # "AP11"  # "SM1"  # "MPM13"  # "MPM14"  # "SB11"  # "GSF10"  # "SMu40"  # "DSCtest"
 
 # Set the initial mesh index
 mesh_index = 0
 
-
-def key_callback_next_frame(vis):
-    global mesh_index, hand_meshes, object_meshes, coord_sys_mesh
-
-    mesh_index = (mesh_index + 1) % len(hand_meshes)
-
-    # Update the displayed mesh
-    vis.clear_geometries()
-    vis.add_geometry(hand_meshes[mesh_index])
-    vis.add_geometry(object_meshes[mesh_index])
-    vis.add_geometry(coord_sys_mesh)
-    vis.update_geometry(hand_meshes[mesh_index])
-    vis.update_geometry(object_meshes[mesh_index])
-    vis.update_geometry(coord_sys_mesh)
-    print("Mesh Number: ", mesh_index)
-    vis.poll_events()
-    vis.update_renderer()
-
-
-def key_callback_previous_frame(vis):
-    global mesh_index, hand_meshes, object_meshes, coord_sys_mesh
-
-    mesh_index = (mesh_index - 1) % len(hand_meshes)
-
-    # Update the displayed mesh
-    vis.clear_geometries()
-    vis.add_geometry(hand_meshes[mesh_index])
-    vis.add_geometry(object_meshes[mesh_index])
-    vis.add_geometry(coord_sys_mesh)
-    vis.update_geometry(hand_meshes[mesh_index])
-    vis.update_geometry(object_meshes[mesh_index])
-    vis.update_geometry(coord_sys_mesh)
-    print("Mesh Number: ", mesh_index)
-    vis.poll_events()
-    vis.update_renderer()
-
-
-# Function to load meshes from a directory
-def load_meshes_from_directory(mesh_dir, color=None):
-    meshes = []
-    for filename in os.listdir(mesh_dir):
-        if filename.endswith(".stl"):
-            filepath = os.path.join(mesh_dir, filename)
-            mesh = o3d.io.read_triangle_mesh(filepath)
-            if color.any():
-                mesh.paint_uniform_color(color[:3])
-            meshes.append(mesh)
-    return meshes
-
-
 def main():
+
+    numbers = re.compile(r'(\d+)')
+    def numericalSort(value):
+        parts = numbers.split(value)
+        parts[1::2] = map(int, parts[1::2])
+        return parts
+
+
+    # Function to load meshes from a directory
+    def load_meshes_from_directory(mesh_dir, color=None):
+        meshes = []
+        for filename in sorted(os.listdir(mesh_dir), key=numericalSort):
+            #if filename.endswith(".stl"):
+            if (re.search(r"\d+(?=\.stl)", filename)):  # to exclude other non stl and tracked surface files
+                filename = ic(filename)
+                filepath = os.path.join(mesh_dir, filename)
+                mesh = o3d.io.read_triangle_mesh(filepath)
+                if color.any():
+                    mesh.paint_uniform_color(color[:3])
+                meshes.append(mesh)
+        return meshes
+
+
     # Load the meshes from the directories and add color
     hand_mesh_dir = "output/" + set + "_meshes/" + set + f"_mano_meshes/"
     object_mesh_dir = "output/" + set + "_meshes/" + set + f"_object_meshes/"
@@ -78,6 +53,43 @@ def main():
     vis.add_geometry(coord_sys_mesh)
     vis.add_geometry(hand_meshes[mesh_index])
     vis.add_geometry(object_meshes[mesh_index])
+    
+    
+    def key_callback_next_frame(vis):
+        global mesh_index  # , hand_meshes, object_meshes, coord_sys_mesh
+        ic()
+        mesh_index = (mesh_index + 1) % len(hand_meshes)
+        mesh_index = ic(mesh_index)
+        # Update the displayed mesh
+        vis.clear_geometries()
+        vis.add_geometry(hand_meshes[mesh_index])
+        vis.add_geometry(object_meshes[mesh_index])
+        vis.add_geometry(coord_sys_mesh)
+        vis.update_geometry(hand_meshes[mesh_index])
+        vis.update_geometry(object_meshes[mesh_index])
+        vis.update_geometry(coord_sys_mesh)
+        #print("Mesh Number: ", mesh_index)
+        vis.poll_events()
+        vis.update_renderer()
+
+
+    def key_callback_previous_frame(vis):
+        global mesh_index  # , hand_meshes, object_meshes, coord_sys_mesh
+        ic()
+        mesh_index = (mesh_index - 1) % len(hand_meshes)
+        mesh_index = ic(mesh_index)
+        # Update the displayed mesh
+        vis.clear_geometries()
+        vis.add_geometry(hand_meshes[mesh_index])
+        vis.add_geometry(object_meshes[mesh_index])
+        vis.add_geometry(coord_sys_mesh)
+        vis.update_geometry(hand_meshes[mesh_index])
+        vis.update_geometry(object_meshes[mesh_index])
+        vis.update_geometry(coord_sys_mesh)
+        #print("Mesh Number: ", mesh_index)
+        vis.poll_events()
+        vis.update_renderer()
+
 
     # Register the key callback function
     vis.register_key_callback(ord("N"), key_callback_next_frame)

@@ -5,12 +5,27 @@ from surface_mesh_methods.object_functions import kypt_demo_obj_mesh, rotated_me
 import os
 # execute from dir: rgb_contact_force_estimation
 
+set = 'SM1'  # "AP11"  # "SM1"  # "MPM13"  # "MPM14"  # "SB11"  # "GSF10"  # "SMu40"  # "DSCtest"
 
-set = 'GSF10'  # "AP11"  # "SM1"  # "MPM13"  # "MPM14"  # "SB11"  # "GSF10"  # "SMu40"
+if set == 'DSCtest':
+    camera_data = True  # if camera data is used no annotation files will be loaded
+    object_name = 'spam_can'  # 'mustard' 'bleach_cleanser' 'spam_can'  # necessary to load corner points for the object
+else:
+    camera_data = False
+    object_name = ''
+
+# Debugging
+from icecream import ic
+def debug_output_to_file(text):
+    with open('debug_log.txt', 'a') as f:
+        f.write(text + '\n')
+ic.configureOutput(prefix='Debug| ', outputFunction=debug_output_to_file, includeContext=True)
+ic.disable()
 
 
 def main():
-    mano_meshes, object_meshes, obj_translation_vec, obj_rotation_vec = kypt_trafo()
+
+    mano_meshes, object_meshes, obj_translation_vec, obj_rotation_vec = kypt_trafo(camera_data, object_name)
 
     # Create a vector to store file paths
     file_paths = []
@@ -30,8 +45,11 @@ def main():
         obj_rot = np.array(obj_rotation_vec[i]).reshape(1, 6)
         obj_trans = np.array(obj_translation_vec[i]).reshape(1, 3)
         object_meshes[i] = kypt_demo_obj_mesh(object_meshes[i], obj_rot, obj_trans)
-        # rotate object mesh so that it fits to hand (passive rotation)
-        object_meshes[i] = rotated_mesh_x(object_meshes[i], rad)
+        additional_rot = 1
+        if additional_rot:
+            # rotate object mesh so that it fits to hand (passive rotation)
+            object_meshes[i] = rotated_mesh_x(object_meshes[i], rad)
+        
         object_meshes[i].paint_uniform_color(object_color[:3])
 
     # Define the directory path
