@@ -29,6 +29,7 @@ def convert_msh_to_vtk(file_path):
 
 
 def convert_msh_to_vtk_todel(file_path):
+    # TODO: delete function
     """
     Uses gmsh to open a msh file, converts it and 
     saves it as a vtk file in the same direction.
